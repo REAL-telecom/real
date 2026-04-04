@@ -60,7 +60,11 @@ export default function AuthLayout() {
         <ThemedText style={styles.subtitle}>{copy.subtitle}</ThemedText>
       </ThemedView>
       <Slot />
-      <ThemedText type="smallBold" style={styles.policy}>{copy.policy}</ThemedText>
+      {copy.policy ? (
+        <ThemedText type="smallBold" style={styles.policy}>
+          {copy.policy}
+        </ThemedText>
+      ) : null}
     </ThemedView>
   );
 }

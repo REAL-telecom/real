@@ -7,9 +7,10 @@
       "@app/*": ["./src/app/*"],
       "@components/*": ["./src/components/*"],
       "@hooks/*": ["./src/hooks/*"],
+      "@session": ["./src/session/index"],
       "@theme": ["./src/theme/index"],
       "@ui/*": ["./src/components/ui/*"],
-      "@utils/*": ["./src/utils/*"]
+      "@utils/*": ["./src/utils/*"],
     }
   },
   "include": [
