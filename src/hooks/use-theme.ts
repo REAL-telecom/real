@@ -1,14 +1,9 @@
-/**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
- */
+import { useTheme as useNavigationTheme } from '@react-navigation/native';
 
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useDesignSystem } from './use-design-system';
 
-export function useTheme() {
-  const scheme = useColorScheme();
-  const theme = scheme === 'unspecified' ? 'light' : scheme;
+export type ApplicationTheme = ReturnType<typeof useDesignSystem>;
 
-  return Colors[theme];
+export function useTheme(): ApplicationTheme {
+  return useNavigationTheme() as ApplicationTheme;
 }

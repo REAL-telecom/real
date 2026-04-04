@@ -1,16 +1,14 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import React from 'react';
-import { useColorScheme } from 'react-native';
+import { ThemeProvider } from '@react-navigation/native';
+import { Stack } from 'expo-router';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { useDesignSystem } from '@hooks/use-design-system';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const designSystem = useDesignSystem();
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
+    <ThemeProvider value={designSystem}>
+      <Stack screenOptions={{ headerShown: false }} />
     </ThemeProvider>
   );
 }
