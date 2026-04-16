@@ -5,18 +5,20 @@
     "paths": {
       "@assets/*": ["./assets/*"],
       "@app/*": ["./src/app/*"],
+      "@components": ["./src/components/index.ts"],
       "@components/*": ["./src/components/*"],
+      "@config/*": ["./src/config/*"],
+      "@contexts": ["./src/contexts/index.ts"],
+      "@contexts/*": ["./src/contexts/*"],
+      "@hooks": ["./src/hooks/index.ts"],
       "@hooks/*": ["./src/hooks/*"],
-      "@session": ["./src/session/index"],
       "@theme": ["./src/theme/index"],
+      "@ui": ["./src/components/ui/index.ts"],
       "@ui/*": ["./src/components/ui/*"],
+      "@utils*": ["./src/utils/index.ts"],
       "@utils/*": ["./src/utils/*"],
+      "@api/*": ["./src/api/*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }

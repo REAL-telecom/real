@@ -1,8 +1,8 @@
 import { StyleSheet,View, type ViewProps } from 'react-native';
 
-import { useTheme } from '@hooks/use-theme';
+import { useTheme } from '@hooks';
 
-export type ThemedViewProps = ViewProps & {
+type ThemedViewProps = ViewProps & {
   type?: 'light' | 'dark' | 'transparent' | 'card';
 };
 

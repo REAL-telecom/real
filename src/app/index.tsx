@@ -1,13 +1,13 @@
 import { Redirect } from 'expo-router';
 
-import { useAppSession } from '@session';
+import { useUser } from '@contexts';
 
 export default function IndexScreen() {
-  const { sessionStatus, phone } = useAppSession();
+  const { isUserLoaded, user } = useUser();
 
-  if (sessionStatus === 'loading') return null;
+  if (!isUserLoaded) return null;
 
-  if (phone) return <Redirect href="/main" />;
+  if (user) return <Redirect href="/main" />;
 
   return <Redirect href="/auth/register-screen" />;
 }

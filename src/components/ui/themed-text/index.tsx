@@ -1,13 +1,15 @@
 import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 
-import { useTheme } from '@hooks/use-theme';
+import { useTheme } from '@hooks';
 import { Fonts, type ThemeColors } from '@theme';
 
-export type ThemedTextProps = TextProps & {
+type ThemedTextProps = TextProps & {
   type?:
     | 'code'
     | 'default'
     | 'defaultBold'
+    | 'errorSmall'
+    | 'errorMedium'
     | 'link'
     | 'linkBold'
     | 'medium'
@@ -58,6 +60,18 @@ export function ThemedText({
       fontWeight: theme.fontWeights.bold,
       lineHeight: theme.lineHeights.six,
     },
+    errorSmall: {
+      fontSize: theme.fontSizes.three,
+      fontWeight: theme.fontWeights.regular,
+      lineHeight: theme.lineHeights.five,
+      textAlign: 'center',
+    },
+    errorMedium: {
+      fontSize: theme.fontSizes.four,
+      fontWeight: theme.fontWeights.regular,
+      lineHeight: theme.lineHeights.six,
+      textAlign: 'center',
+    },
     subtitle: {
       fontSize: theme.fontSizes.six,
       fontWeight: theme.fontWeights.semiBold,
@@ -93,12 +107,18 @@ export function ThemedText({
         {
           color:
             theme.colors[
-              type === 'link' || type === 'linkBold' ? 'link' : 'text'
+              type === 'link' || type === 'linkBold'
+                ? 'link'
+                : type === 'errorSmall' || type === 'errorMedium'
+                  ? 'notification'
+                  : 'text'
             ],
         },
         type === 'code' && styles.code,
         type === 'default' && styles.default,
         type === 'defaultBold' && styles.defaultBold,
+        type === 'errorSmall' && styles.errorSmall,
+        type === 'errorMedium' && styles.errorMedium,
         type === 'link' && styles.link,
         type === 'linkBold' && styles.linkBold,
         type === 'small' && styles.small,

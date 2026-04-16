@@ -1,6 +1,6 @@
-import { useTheme } from '@hooks/use-theme';
-import { DigitInput } from '@ui/digit-input';
-import { sanitizePin } from '@utils/sanitizers';
+import { useTheme } from '@hooks';
+import { DigitInput } from '@ui';
+import { sanitizePin } from '@utils';
 
 interface PinInputProps {
   onComplete?: (value: string) => void;
@@ -18,8 +18,6 @@ export function PinInput({ onComplete, submitAttempted }: PinInputProps) {
       cellGap={5}
       maxLength={5}
       errorMessage="Код задан неверно"
-      errorLineHeight={theme.lineHeights.five}
-      errorMarginBottom={theme.margins.one}
       submitAttempted={submitAttempted}
       sanitize={sanitizePin}
       onComplete={onComplete}

@@ -1,8 +1,7 @@
 import { useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput } from 'react-native';
 
-import { useTheme } from '@hooks/use-theme';
-
+import { useTheme } from '@hooks';
 import { DigitCell } from '../digit-cell';
 import { ThemedText } from '../themed-text';
 import { ThemedView } from '../themed-view';
@@ -17,10 +16,13 @@ type DigitInputProps = {
   cellHeight: number;
   cellFontSize: number;
   cellGap?: number;
-  cellMarginBottom?: number;
+  cellMarginBlock?: number;
+  cellMarginBlockStart?: number;
+  cellMarginBlockEnd?: number;
+  errorMarginBlock?: number;
+  errorMarginBlockStart?: number;
+  errorMarginBlockEnd?: number;
   errorMessage?: string;
-  errorLineHeight?: number;
-  errorMarginBottom?: number;
   maxLength: number;
   submitAttempted?: boolean;
   layout?: DigitInputLayoutItem[];
@@ -33,10 +35,13 @@ export function DigitInput({
   cellHeight,
   cellFontSize,
   cellGap,
-  cellMarginBottom,
+  cellMarginBlock,
+  cellMarginBlockStart,
+  cellMarginBlockEnd,
+  errorMarginBlock,
+  errorMarginBlockStart,
+  errorMarginBlockEnd,
   errorMessage,
-  errorLineHeight,
-  errorMarginBottom,
   layout,
   maxLength,
   submitAttempted = false,
@@ -62,13 +67,15 @@ export function DigitInput({
       alignItems: 'center',
       justifyContent: 'center',
       columnGap: cellGap ?? theme.gaps.two,
-      marginBottom: cellMarginBottom ?? theme.margins.one,
+      marginBlockStart: cellMarginBlock ?? cellMarginBlockStart ?? theme.margins.two,
+      marginBlockEnd: cellMarginBlock ?? cellMarginBlockEnd ?? theme.margins.none,
     },
-    maskText: {
+    mask: {
       color: theme.colors.text,
       fontSize: cellFontSize,
       fontWeight: theme.fontWeights.bold,
-      marginHorizontal: theme.margins.none,
+      marginInlineStart: theme.margins.none,
+      marginInlineEnd: theme.margins.none,
     },
     lockedCell: {
       width: cellWidth,
@@ -103,12 +110,9 @@ export function DigitInput({
       fontSize: cellFontSize,
       fontWeight: theme.fontWeights.bold,
     },
-    errorText: {
-      color: theme.colors.notification,
-      textAlign: 'center',
-      fontSize: theme.fontSizes.three,
-      lineHeight: errorLineHeight ?? theme.lineHeights.five,
-      marginBottom: errorMarginBottom ?? theme.margins.none,
+    error: {
+      marginBlockStart: errorMarginBlock ?? errorMarginBlockStart ?? theme.margins.two,
+      marginBlockEnd: errorMarginBlock ?? errorMarginBlockEnd ?? theme.margins.two,
     },
   });
 
@@ -184,7 +188,7 @@ export function DigitInput({
   const items = resolvedLayout.map((item, itemIndex) => {
     if (item.type === 'text') {
       return (
-        <Text key={`text-${itemIndex}-${item.value}`} style={styles.maskText}>
+        <Text key={`text-${itemIndex}-${item.value}`} style={styles.mask}>
           {item.value}
         </Text>
       );
@@ -194,7 +198,11 @@ export function DigitInput({
       return (
         <ThemedView
           key={`locked-${itemIndex}-${item.value}`}
-          style={[styles.lockedCell, lockedState === 'filled' && styles.lockedFilled]}
+          style={[
+            styles.lockedCell,
+            lockedState === 'filled' && styles.lockedFilled,
+            lockedState === 'error' && styles.lockedError,
+          ]}
         >
           <Text style={styles.lockedText}>{item.value}</Text>
         </ThemedView>
@@ -228,8 +236,8 @@ export function DigitInput({
   return (
     <ThemedView style={styles.container}>
       <ThemedView style={styles.inputsContainer}>{items}</ThemedView>
-      <ThemedText type="medium" style={styles.errorText}>
-        {showError ? (errorMessage ?? 'Ошибка') : ' '}
+      <ThemedText type="errorSmall" style={styles.error}>
+        {showError ? errorMessage : ' '}
       </ThemedText>
     </ThemedView>
   );

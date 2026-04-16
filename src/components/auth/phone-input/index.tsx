@@ -1,15 +1,15 @@
-import { useTheme } from '@hooks/use-theme';
-import { DigitInput } from '@ui/digit-input';
-import { sanitizePhone } from '@utils/sanitizers';
+import { useTheme } from '@hooks';
+import { DigitInput } from '@ui';
+import { sanitizePhone } from '@utils';
 
-interface PhoneInputProps {
+type PhoneInputProps = {
   onComplete?: (value: string) => void;
   submitAttempted?: boolean;
 }
 
 export function PhoneInput({ onComplete, submitAttempted }: PhoneInputProps) {
   const theme = useTheme();
-  
+
   return (
     <DigitInput
       cellWidth={20}
@@ -17,7 +17,6 @@ export function PhoneInput({ onComplete, submitAttempted }: PhoneInputProps) {
       cellFontSize={theme.fontSizes.four}
       cellGap={theme.gaps.half}
       errorMessage="Номер задан неверно"
-      errorLineHeight={theme.lineHeights.five}
       maxLength={10}
       submitAttempted={submitAttempted}
       layout={[

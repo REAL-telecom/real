@@ -1,8 +1,7 @@
 import { StyleSheet } from 'react-native';
 
-import { useTheme } from '@hooks/use-theme';
-import { ThemedText } from '@ui/themed-text';
-import { ThemedView } from '@ui/themed-view';
+import { useTheme } from '@hooks';
+import { ThemedText, ThemedView } from '@ui';
 
 export default function MainScreen() {
   const theme = useTheme();
@@ -12,7 +11,8 @@ export default function MainScreen() {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: theme.paddings.five,
+      paddingInlineStart: theme.paddings.five,
+      paddingInlineEnd: theme.paddings.five,
     },
   });
 

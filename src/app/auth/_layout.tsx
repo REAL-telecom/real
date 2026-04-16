@@ -1,48 +1,70 @@
-import { Slot, useGlobalSearchParams, usePathname } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { Slot, usePathname } from 'expo-router';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTheme } from '@hooks/use-theme';
-import { ThemedText } from '@ui/themed-text';
-import { ThemedView } from '@ui/themed-view';
+import { AuthProvider, useAuth } from '@contexts';
+import { useTheme } from '@hooks';
+import { Preloader, ThemedText, ThemedView } from '@ui';
 
-type AuthCopy = {
+type ScreenContent = {
   title: string;
   subtitle: string;
   policy?: string;
 };
 
-function getAuthCopy(pathname: string, phone?: string): AuthCopy {
-  if (pathname.endsWith('/verify-screen')) {
+type ScreenType = 'register' | 'verify';
+
+function getScreenContent(screen: ScreenType, phone: string): ScreenContent {
+  if (screen === 'register') {
     return {
-      title: 'Авторизация',
-      subtitle: `Мы позвоним на номер ${phone ?? '+7'} и продиктуем 5-значный код.`,
+      title: 'Добро пожаловать!',
+      subtitle: 'Для продолжения необходимо зарегистрироваться',
+      policy: 'Нажимая на кнопку вы соглашаетесь политикой конфиденциальности',
     };
   }
 
   return {
-    title: 'Добро пожаловать!',
-    subtitle: 'Для продолжения необходимо зарегистрироваться',
-    policy: 'Нажимая на кнопку вы соглашаетесь политикой конфиденциальности',
+    title: 'Авторизация',
+    subtitle: `Мы позвоним на номер ${phone} и продиктуем 5-значный код.`,
   };
 }
 
 export default function AuthLayout() {
-  const theme = useTheme();
   const pathname = usePathname();
-  const { phone } = useGlobalSearchParams<{ phone?: string }>();
-  const copy = getAuthCopy(pathname, phone);
+  const screenType = pathname.includes('verify-screen') ? 'verify' : 'register';
+
+  return (
+    <AuthProvider>
+      <AuthLayoutBody type={screenType} />
+    </AuthProvider>
+  );
+}
+
+function AuthLayoutBody({ type }: { type: ScreenType }) {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const { phone, isSnapshotLoaded } = useAuth();
+  const content = getScreenContent(type, phone);
 
   const styles = StyleSheet.create({
-    container: {
+    root: {
       flex: 1,
-      gap: theme.gaps.three,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
       justifyContent: 'center',
-      paddingHorizontal: theme.paddings.five,
+      gap: theme.gaps.three,
+      paddingInline: theme.paddings.five,
+      paddingBlockStart: insets.top,
+      paddingBlockEnd: Math.max(insets.bottom, theme.paddings.five),
     },
     header: {
       alignItems: 'center',
       gap: theme.gaps.three,
-      marginBottom: theme.margins.five,
+      marginBlockEnd: theme.margins.five,
     },
     subtitle: {
       textAlign: 'center',
@@ -50,21 +72,41 @@ export default function AuthLayout() {
     },
     policy: {
       textAlign: 'center',
-    }
+    },
   });
 
-  return (
-    <ThemedView style={styles.container}>
-      <ThemedView style={styles.header}>
-        <ThemedText type="title">{copy.title}</ThemedText>
-        <ThemedText style={styles.subtitle}>{copy.subtitle}</ThemedText>
+  if (!isSnapshotLoaded) {
+    return (
+      <ThemedView style={styles.root}>
+        <Preloader text="Загрузка..." />
       </ThemedView>
-      <Slot />
-      {copy.policy ? (
-        <ThemedText type="smallBold" style={styles.policy}>
-          {copy.policy}
-        </ThemedText>
-      ) : null}
+    );
+  }
+
+  return (
+    <ThemedView style={styles.root}>
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <ThemedView style={styles.header}>
+            <ThemedText type="title">{content.title}</ThemedText>
+            <ThemedText style={styles.subtitle}>{content.subtitle}</ThemedText>
+          </ThemedView>
+          <Slot />
+          {content.policy && (
+            <ThemedText type="smallBold" style={styles.policy}>
+              {content.policy}
+            </ThemedText>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </ThemedView>
   );
 }

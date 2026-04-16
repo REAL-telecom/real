@@ -1,6 +1,6 @@
 import { StyleSheet, TextInput } from 'react-native';
 
-import { useTheme } from '@hooks/use-theme';
+import { useTheme } from '@hooks';
 
 type DigitCellState = 'empty' | 'filled' | 'error';
 
