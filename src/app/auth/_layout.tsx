@@ -1,4 +1,5 @@
 import { Slot, usePathname } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -26,6 +27,7 @@ function getScreenContent(screen: ScreenType, phone: string): ScreenContent {
   return {
     title: 'Авторизация',
     subtitle: `Мы позвоним на номер ${phone} и продиктуем 5-значный код.`,
+    policy: ' ',
   };
 }
 
@@ -41,10 +43,11 @@ export default function AuthLayout() {
 }
 
 function AuthLayoutBody({ type }: { type: ScreenType }) {
-  const theme = useTheme();
+  const { storedPhoneNumber, isSnapshotLoaded } = useAuth();
   const insets = useSafeAreaInsets();
-  const { phone, isSnapshotLoaded } = useAuth();
-  const content = getScreenContent(type, phone);
+  const theme = useTheme();
+
+  const content = getScreenContent(type, storedPhoneNumber ?? '');
 
   const styles = StyleSheet.create({
     root: {
@@ -78,6 +81,7 @@ function AuthLayoutBody({ type }: { type: ScreenType }) {
   if (!isSnapshotLoaded) {
     return (
       <ThemedView style={styles.root}>
+        <StatusBar style="dark" />
         <Preloader text="Загрузка..." />
       </ThemedView>
     );
@@ -85,6 +89,7 @@ function AuthLayoutBody({ type }: { type: ScreenType }) {
 
   return (
     <ThemedView style={styles.root}>
+      <StatusBar style="dark" />
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

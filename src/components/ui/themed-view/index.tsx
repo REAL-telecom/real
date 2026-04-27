@@ -1,4 +1,4 @@
-import { StyleSheet,View, type ViewProps } from 'react-native';
+import { StyleSheet, View, type ViewProps } from 'react-native';
 
 import { useTheme } from '@hooks';
 

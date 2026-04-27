@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '@config/api';
-import type { User } from '../contexts/user/types';
+import { type User } from '@contexts';
+import { syncServerTime } from '@utils';
 
 type AuthApiBaseResponse = {
   success: boolean;
@@ -18,12 +19,19 @@ async function request<T extends AuthApiBaseResponse>(
   body: object
 ): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
-  const res = await fetch(url, {
+  const requestTime = Date.now();
+
+  const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  const text = await res.text();
+  const responseTime = Date.now();
+  const httpDate = response.headers.get('Date');
+
+  syncServerTime(httpDate, requestTime, responseTime);
+
+  const text = await response.text();
   let parsed: unknown = null;
   try {
     parsed = text ? JSON.parse(text) : null;
@@ -34,6 +42,14 @@ async function request<T extends AuthApiBaseResponse>(
   if (!parsed || typeof parsed !== 'object') {
     throw new Error(`Invalid response shape for ${path}`);
   }
+
+  const durationMs = responseTime - requestTime;
+  console.log('[auth-api]', {
+    durationMs,
+    path,
+    status: response.status,
+    body: parsed,
+  });
 
   return parsed as T;
 }

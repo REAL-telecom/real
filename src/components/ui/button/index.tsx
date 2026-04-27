@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { type ReactNode } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 
 import { useTheme } from '@hooks';
 import { ThemedText } from '../themed-text';
@@ -19,13 +20,16 @@ type ButtonProps = {
   paddingInlineStart?: number;
   paddingInlineEnd?: number;
   disabled?: boolean;
-  text: string;
+  loading?: boolean;
+  text?: string;
+  children?: ReactNode;
   width?: number;
   onPress?: () => void;
 };
 
 export function Button({
   disabled = false,
+  loading = false,
   backgroundColor,
   borderRadius,
   marginBlock,
@@ -41,6 +45,7 @@ export function Button({
   paddingInlineStart,
   paddingInlineEnd,
   text,
+  children,
   width,
   onPress,
 }: ButtonProps) {
@@ -67,21 +72,31 @@ export function Button({
     buttonPressed: {
       opacity: 0.8,
     },
+    loader: {
+      marginBlockStart: theme.margins.none,
+      marginBlockEnd: theme.margins.none,
+    },
   });
 
   return (
     <Pressable
-      disabled={disabled}
+      disabled={disabled || loading}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        disabled && styles.buttonDisabled,
-        pressed && !disabled && styles.buttonPressed,
+        (disabled || loading) && styles.buttonDisabled,
+        pressed && !disabled && !loading && styles.buttonPressed,
       ]}
     >
-      <ThemedText type="defaultBold" style={{ color: theme.colors.textInverted }}>
-        {text}
-      </ThemedText>
+      {loading ? (
+        <ActivityIndicator size="small" color={theme.colors.textInverted} style={styles.loader} />
+      ) : children ? (
+        children
+      ) : (
+        <ThemedText type="defaultBold" style={{ color: theme.colors.textInverted }}>
+          {text}
+        </ThemedText>
+      )}
     </Pressable>
   );
 }

@@ -10,6 +10,7 @@ type DigitCellProps = {
   width: number;
   height: number;
   fontSize: number;
+  disabled?: boolean;
   onChangeText: (text: string) => void;
   onKeyPress: (key: string) => void;
   inputRef: (ref: TextInput | null) => void;
@@ -21,6 +22,7 @@ export function DigitCell({
   width,
   height,
   fontSize,
+  disabled = false,
   onChangeText,
   onKeyPress,
   inputRef,
@@ -44,18 +46,21 @@ export function DigitCell({
       shadowRadius: 6,
       elevation: 5,
       padding: 0,
-
+    },
+    disabled: {
+      opacity: 0.5,
+      backgroundColor: theme.colors.surface,
     },
     empty: {
       borderColor: theme.colors.border,
       borderWidth: theme.borderWidths.thin,
     },
-    filled: {
-      borderColor: theme.colors.success,
-      borderWidth: theme.borderWidths.medium,
-    },
     error: {
       borderColor: theme.colors.notification,
+      borderWidth: theme.borderWidths.medium,
+    },
+    filled: {
+      borderColor: theme.colors.success,
       borderWidth: theme.borderWidths.medium,
     },
   });
@@ -66,8 +71,9 @@ export function DigitCell({
       style={[
         styles.input,
         state === 'empty' && styles.empty,
-        state === 'filled' && styles.filled,
+        !disabled && state === 'filled' && styles.filled,
         state === 'error' && styles.error,
+        disabled && styles.disabled,
       ]}
       value={value}
       onChangeText={onChangeText}
@@ -75,6 +81,7 @@ export function DigitCell({
       keyboardType="number-pad"
       maxLength={1}
       selectTextOnFocus
+      editable={!disabled}
     />
   );
 }

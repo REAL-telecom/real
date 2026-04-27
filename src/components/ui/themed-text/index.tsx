@@ -3,28 +3,24 @@ import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 import { useTheme } from '@hooks';
 import { Fonts, type ThemeColors } from '@theme';
 
-type ThemedTextProps = TextProps & {
+export type ThemedTextProps = TextProps & {
   type?:
     | 'code'
     | 'default'
     | 'defaultBold'
-    | 'errorSmall'
-    | 'errorMedium'
-    | 'link'
-    | 'linkBold'
     | 'medium'
     | 'mediumBold'
     | 'small'
-    | 'smallBold' 
+    | 'smallBold'
     | 'subtitle'
     | 'title';
-  themeColor?: ThemeColors;
+  color?: ThemeColors;
 };
 
 export function ThemedText({
   style,
   type = 'default',
-  themeColor,
+  color = 'text',
   ...rest
 }: ThemedTextProps) {
   const theme = useTheme();
@@ -60,18 +56,6 @@ export function ThemedText({
       fontWeight: theme.fontWeights.bold,
       lineHeight: theme.lineHeights.six,
     },
-    errorSmall: {
-      fontSize: theme.fontSizes.three,
-      fontWeight: theme.fontWeights.regular,
-      lineHeight: theme.lineHeights.five,
-      textAlign: 'center',
-    },
-    errorMedium: {
-      fontSize: theme.fontSizes.four,
-      fontWeight: theme.fontWeights.regular,
-      lineHeight: theme.lineHeights.six,
-      textAlign: 'center',
-    },
     subtitle: {
       fontSize: theme.fontSizes.six,
       fontWeight: theme.fontWeights.semiBold,
@@ -82,16 +66,6 @@ export function ThemedText({
       fontWeight: theme.fontWeights.semiBold,
       lineHeight: theme.lineHeights.ten,
     },
-    link: {
-      fontSize: theme.fontSizes.four,
-      fontWeight: theme.fontWeights.medium,
-      lineHeight: theme.lineHeights.six,
-    },
-    linkBold: {
-      fontSize: theme.fontSizes.four,
-      fontWeight: theme.fontWeights.bold,
-      lineHeight: theme.lineHeights.six,
-    },
     code: {
       fontFamily: Fonts.mono,
       fontSize: theme.fontSizes.four,
@@ -101,33 +75,32 @@ export function ThemedText({
     },
   });
 
+  const getFontStyle = () => {
+    switch (type) {
+      case 'code':
+        return styles.code;
+      case 'default':
+        return styles.default;
+      case 'defaultBold':
+        return styles.defaultBold;
+      case 'medium':
+        return styles.medium;
+      case 'mediumBold':
+        return styles.mediumBold;
+      case 'small':
+        return styles.small;
+      case 'smallBold':
+        return styles.smallBold;
+      case 'subtitle':
+        return styles.subtitle;
+      case 'title':
+        return styles.title;
+      default:
+        return styles.default;
+    }
+  };
+
   return (
-    <Text
-      style={[
-        {
-          color:
-            theme.colors[
-              type === 'link' || type === 'linkBold'
-                ? 'link'
-                : type === 'errorSmall' || type === 'errorMedium'
-                  ? 'notification'
-                  : 'text'
-            ],
-        },
-        type === 'code' && styles.code,
-        type === 'default' && styles.default,
-        type === 'defaultBold' && styles.defaultBold,
-        type === 'errorSmall' && styles.errorSmall,
-        type === 'errorMedium' && styles.errorMedium,
-        type === 'link' && styles.link,
-        type === 'linkBold' && styles.linkBold,
-        type === 'small' && styles.small,
-        type === 'smallBold' && styles.smallBold,
-        type === 'subtitle' && styles.subtitle,
-        type === 'title' && styles.title,
-        style,
-      ]}
-      {...rest}
-    />
+    <Text style={[{ color: theme.colors[color] }, getFontStyle(), style]} {...rest} />
   );
 }

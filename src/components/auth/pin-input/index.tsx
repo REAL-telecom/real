@@ -5,9 +5,10 @@ import { sanitizePin } from '@utils';
 interface PinInputProps {
   onComplete?: (value: string) => void;
   submitAttempted?: boolean;
+  disabled?: boolean;
 }
 
-export function PinInput({ onComplete, submitAttempted }: PinInputProps) {
+export function PinInput({ onComplete, submitAttempted, disabled }: PinInputProps) {
   const theme = useTheme();
 
   return (
@@ -19,6 +20,7 @@ export function PinInput({ onComplete, submitAttempted }: PinInputProps) {
       maxLength={5}
       errorMessage="Код задан неверно"
       submitAttempted={submitAttempted}
+      disabled={disabled}
       sanitize={sanitizePin}
       onComplete={onComplete}
     />

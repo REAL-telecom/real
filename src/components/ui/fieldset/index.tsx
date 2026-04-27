@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { useTheme } from '@hooks';
 import { ThemedText } from '../themed-text';
@@ -45,10 +45,14 @@ export function Fieldset({
       borderWidth: fieldsetBorderWidth ?? theme.borderWidths.thin,
       borderColor: fieldsetBorderColor ?? theme.colors.fieldsetBorder,
       borderRadius: fieldsetBorderRadius ?? theme.borderRadiuses.three,
-      paddingBlockStart: fieldsetPaddingBlock ?? fieldsetPaddingBlockStart ?? theme.paddings.six,
-      paddingBlockEnd: fieldsetPaddingBlock ?? fieldsetPaddingBlockEnd ?? theme.paddings.none,
-      paddingInline: fieldsetPaddingInline ?? fieldsetPaddingInlineEnd ?? theme.paddings.none,
-      paddingInlineStart: fieldsetPaddingInline ?? fieldsetPaddingInlineStart ?? theme.paddings.none,
+      paddingBlockStart:
+        fieldsetPaddingBlock ?? fieldsetPaddingBlockStart ?? theme.paddings.six,
+      paddingBlockEnd:
+        fieldsetPaddingBlock ?? fieldsetPaddingBlockEnd ?? theme.paddings.none,
+      paddingInline:
+        fieldsetPaddingInline ?? fieldsetPaddingInlineEnd ?? theme.paddings.none,
+      paddingInlineStart:
+        fieldsetPaddingInline ?? fieldsetPaddingInlineStart ?? theme.paddings.none,
     },
     legendContainer: {
       position: 'absolute',

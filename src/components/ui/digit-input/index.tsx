@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput } from 'react-native';
 
 import { useTheme } from '@hooks';
@@ -25,9 +25,25 @@ type DigitInputProps = {
   errorMessage?: string;
   maxLength: number;
   submitAttempted?: boolean;
+  disabled?: boolean;
+  initialValue?: string;
   layout?: DigitInputLayoutItem[];
   sanitize: (value: string) => string;
+  onChange?: (value: string) => void;
   onComplete?: (value: string) => void;
+};
+
+const getNormalizedDigits = (
+  value: string | undefined,
+  maxLength: number,
+  sanitize: (input: string) => string
+): string[] => {
+  const normalized = sanitize(value ?? '');
+  const next = [
+    ...normalized.split(''),
+    ...Array(maxLength - normalized.length).fill(''),
+  ];
+  return next.slice(0, maxLength);
 };
 
 export function DigitInput({
@@ -45,12 +61,23 @@ export function DigitInput({
   layout,
   maxLength,
   submitAttempted = false,
+  disabled = false,
+  initialValue,
   sanitize,
+  onChange,
   onComplete,
 }: DigitInputProps) {
-  const [digits, setDigits] = useState<string[]>(Array(maxLength).fill(''));
+  const [digits, setDigits] = useState<string[]>(() =>
+    getNormalizedDigits(initialValue, maxLength, sanitize)
+  );
   const inputs = useRef<Array<TextInput | null>>([]);
   const theme = useTheme();
+
+  useEffect(() => {
+    if (initialValue === undefined) return;
+
+    setDigits(getNormalizedDigits(initialValue, maxLength, sanitize));
+  }, [initialValue, maxLength, sanitize]);
 
   const resolvedLayout: DigitInputLayoutItem[] = layout ?? [
     { type: 'cells', count: maxLength },
@@ -105,10 +132,17 @@ export function DigitInput({
       borderColor: theme.colors.notification,
       borderWidth: theme.borderWidths.medium,
     },
+    lockedDisabled: {
+      opacity: 0.5,
+      backgroundColor: theme.colors.surface,
+    },
     lockedText: {
       color: theme.colors.text,
       fontSize: cellFontSize,
       fontWeight: theme.fontWeights.bold,
+    },
+    lockedDisabledText: {
+      opacity: 0.5,
     },
     error: {
       marginBlockStart: errorMarginBlock ?? errorMarginBlockStart ?? theme.margins.two,
@@ -131,7 +165,9 @@ export function DigitInput({
   const applyDigits = (next: string[]) => {
     const wasComplete = digits.every((d) => d !== '');
     const nowComplete = next.every((d) => d !== '');
+    const rawValue = sanitize(next.join(''));
     setDigits(next);
+    onChange?.(rawValue);
     if (nowComplete && !wasComplete && onComplete) onComplete(sanitize(next.join('')));
   };
 
@@ -154,7 +190,7 @@ export function DigitInput({
       for (let i = 0; i < pasted.length && index + i < maxLength; i += 1)
         rawNext[index + i] = pasted[i];
       const next = normalizeDigits(rawNext);
-      applyDigits(rawNext);
+      applyDigits(next);
       focusFirstEmptyCell(next, index);
       return;
     }
@@ -200,11 +236,14 @@ export function DigitInput({
           key={`locked-${itemIndex}-${item.value}`}
           style={[
             styles.lockedCell,
-            lockedState === 'filled' && styles.lockedFilled,
+            !disabled && lockedState === 'filled' && styles.lockedFilled,
             lockedState === 'error' && styles.lockedError,
+            disabled && styles.lockedDisabled,
           ]}
         >
-          <Text style={styles.lockedText}>{item.value}</Text>
+          <Text style={[styles.lockedText, disabled && styles.lockedDisabledText]}>
+            {item.value}
+          </Text>
         </ThemedView>
       );
     }
@@ -223,6 +262,7 @@ export function DigitInput({
           width={cellWidth}
           height={cellHeight}
           fontSize={cellFontSize}
+          disabled={disabled}
           onChangeText={(text) => handleChange(text, index)}
           onKeyPress={(key) => handleKeyPress(key, index)}
           inputRef={(ref) => {
@@ -236,7 +276,7 @@ export function DigitInput({
   return (
     <ThemedView style={styles.container}>
       <ThemedView style={styles.inputsContainer}>{items}</ThemedView>
-      <ThemedText type="errorSmall" style={styles.error}>
+      <ThemedText type="small" color="notification" style={styles.error}>
         {showError ? errorMessage : ' '}
       </ThemedText>
     </ThemedView>
