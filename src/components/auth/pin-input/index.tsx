@@ -3,12 +3,18 @@ import { DigitInput } from '@ui';
 import { sanitizePin } from '@utils';
 
 interface PinInputProps {
+  onChange?: (value: string) => void;
   onComplete?: (value: string) => void;
   submitAttempted?: boolean;
   disabled?: boolean;
 }
 
-export function PinInput({ onComplete, submitAttempted, disabled }: PinInputProps) {
+export function PinInput({
+  onChange,
+  onComplete,
+  submitAttempted,
+  disabled,
+}: PinInputProps) {
   const theme = useTheme();
 
   return (
@@ -22,6 +28,7 @@ export function PinInput({ onComplete, submitAttempted, disabled }: PinInputProp
       submitAttempted={submitAttempted}
       disabled={disabled}
       sanitize={sanitizePin}
+      onChange={onChange}
       onComplete={onComplete}
     />
   );

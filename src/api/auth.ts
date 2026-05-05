@@ -10,7 +10,11 @@ type AuthApiBaseResponse = {
   nextRequestAvailableAt?: number;
 };
 
-type VerifyAuthSuccessResponse = AuthApiBaseResponse & {
+type RequestAuthCodeResponse = AuthApiBaseResponse & {
+  pinExpiresAt?: number;
+};
+
+type VerifyAuthCodeResponse = AuthApiBaseResponse & {
   user?: User;
 };
 
@@ -54,13 +58,13 @@ async function request<T extends AuthApiBaseResponse>(
   return parsed as T;
 }
 
-export async function requestAuthCode(phone: string): Promise<AuthApiBaseResponse> {
-  return request<AuthApiBaseResponse>('/auth/request-code', { phone });
+export async function requestAuthCode(phone: string): Promise<RequestAuthCodeResponse> {
+  return request<RequestAuthCodeResponse>('/auth/request-code', { phone });
 }
 
 export async function verifyAuthCode(
   phone: string,
   code: string
-): Promise<VerifyAuthSuccessResponse> {
-  return request<VerifyAuthSuccessResponse>('/auth/verify-code', { phone, code });
+): Promise<VerifyAuthCodeResponse> {
+  return request<VerifyAuthCodeResponse>('/auth/verify-code', { phone, code });
 }

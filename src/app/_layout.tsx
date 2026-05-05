@@ -10,6 +10,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function RootNavigator() {
   const { isUserLoaded } = useUser();
+  
   useEffect(() => {
     if (isUserLoaded) {
       SplashScreen.hideAsync().catch(() => {});

@@ -13,7 +13,7 @@ type ScreenContent = {
   policy?: string;
 };
 
-type ScreenType = 'register' | 'verify';
+type ScreenType = 'register' | 'verify' | 'support';
 
 function getScreenContent(screen: ScreenType, phone: string): ScreenContent {
   if (screen === 'register') {
@@ -24,6 +24,14 @@ function getScreenContent(screen: ScreenType, phone: string): ScreenContent {
     };
   }
 
+  if (screen === 'support') {
+    return {
+      title: 'Не могу войти',
+      subtitle: 'Ваш IP заблокирован.',
+      policy: ' ',
+    };
+  }
+
   return {
     title: 'Авторизация',
     subtitle: `Мы позвоним на номер ${phone} и продиктуем 5-значный код.`,
@@ -31,9 +39,15 @@ function getScreenContent(screen: ScreenType, phone: string): ScreenContent {
   };
 }
 
+function getScreenType(pathname: string): ScreenType {
+  if (pathname.includes('verify-screen')) return 'verify';
+  if (pathname.includes('support-screen')) return 'support';
+  return 'register';
+}
+
 export default function AuthLayout() {
   const pathname = usePathname();
-  const screenType = pathname.includes('verify-screen') ? 'verify' : 'register';
+  const screenType = getScreenType(pathname);
 
   return (
     <AuthProvider>

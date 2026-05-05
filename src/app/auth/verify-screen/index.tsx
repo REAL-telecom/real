@@ -11,12 +11,14 @@ import { Button, CountdownText, Fieldset, ThemedText } from '@ui';
 export default function VerifyCodeScreen() {
   const {
     isSnapshotLoaded,
+    isIPBlocked,
+    setIsIPBlocked,
     clientRateLimitExpiresAt,
     setClientRateLimitExpiresAt,
     storedPhoneNumber,
     setStoredPhoneNumber,
     phones,
-    addPhone,
+    setPhonePinExpiresAt,
     setPhoneResendTimeout,
     clearPhoneResendTimeout,
   } = useAuth();
@@ -36,9 +38,14 @@ export default function VerifyCodeScreen() {
   const hasErrorMessage = errorMessage !== ' ';
   const hasWrongPinError = errorMessage === 'Неверный пин';
   const isCodeExpiredError = errorMessage === 'Код устарел';
-  const isPinInputDisabled = isRequestInProgress || hasWrongPinError || isCodeExpiredError;
   const isRateLimited = (clientRateLimitExpiresAt ?? 0) > 0;
   const isResendBlocked = (currentPhone?.resendTimeoutExpiresAt ?? 0) > 0;
+  const isPinInputDisabled =
+    isRequestInProgress ||
+    hasWrongPinError ||
+    isCodeExpiredError ||
+    isRateLimited ||
+    isIPBlocked;
 
   const styles = StyleSheet.create({
     centeredText: {
@@ -57,6 +64,12 @@ export default function VerifyCodeScreen() {
     },
   });
 
+  const resetPinInputs = useCallback(() => {
+    pinRef.current = '';
+    setIsPinInputCompleted(false);
+    setPinInputKey((prev) => prev + 1);
+  }, []);
+
   // Проверка: есть ли номер для верификации
   useEffect(() => {
     if (!isSnapshotLoaded) return;
@@ -70,16 +83,24 @@ export default function VerifyCodeScreen() {
     if (errorMessage === ' ') return;
     const id = setTimeout(() => {
       setErrorMessage(' ');
-      pinRef.current = '';
-      setIsPinInputCompleted(false);
-      setPinInputKey((prev) => prev + 1);
+
+      if (!isRateLimited && !isIPBlocked) {
+        resetPinInputs();
+      }
 
       if (isCodeExpiredError) {
         router.replace('/auth/register-screen');
       }
     }, 5000);
     return () => clearTimeout(id);
-  }, [errorMessage, router]);
+  }, [
+    errorMessage,
+    isCodeExpiredError,
+    isIPBlocked,
+    isRateLimited,
+    resetPinInputs,
+    router,
+  ]);
 
   const handleBack = useCallback(() => {
     router.replace('/auth/register-screen');
@@ -88,16 +109,19 @@ export default function VerifyCodeScreen() {
   const handleCountdownComplete = useCallback(() => {
     if (isRateLimited) {
       setClientRateLimitExpiresAt(null);
+      resetPinInputs();
       return;
     }
+
     if (storedPhoneNumber) {
       clearPhoneResendTimeout(storedPhoneNumber);
     }
   }, [
-    clearPhoneResendTimeout,
-    storedPhoneNumber,
     isRateLimited,
+    storedPhoneNumber,
+    resetPinInputs,
     setClientRateLimitExpiresAt,
+    clearPhoneResendTimeout,
   ]);
 
   const handlePinInputComplete = useCallback((digits: string) => {
@@ -106,8 +130,13 @@ export default function VerifyCodeScreen() {
     setErrorMessage(' ');
   }, []);
 
+  const handlePinChange = useCallback((value: string) => {
+    pinRef.current = value;
+    setIsPinInputCompleted(value.length === 5);
+  }, []);
+
   const handleResend = useCallback(async () => {
-    if (!storedPhoneNumber) return;
+    if (!storedPhoneNumber || isIPBlocked) return;
 
     setIsRequestInProgress(true);
     setErrorMessage(' ');
@@ -119,30 +148,48 @@ export default function VerifyCodeScreen() {
           setClientRateLimitExpiresAt(response.blockExpiresAt);
           return;
         }
-        if (response.message === 'Код устарел') {
-          setErrorMessage(response.message);
+        if (response.message === 'IP заблокирован') {
+          setIsIPBlocked(true);
+          clearPhoneResendTimeout(storedPhoneNumber);
           return;
         }
         setErrorMessage(response.message);
         return;
       }
 
+      if (response.pinExpiresAt) {
+        setPhonePinExpiresAt(storedPhoneNumber, response.pinExpiresAt);
+      }
+
       if (response.nextRequestAvailableAt) {
-        addPhone(storedPhoneNumber);
         setPhoneResendTimeout(storedPhoneNumber, response.nextRequestAvailableAt);
       }
 
       setIsPinInputCompleted(false);
       pinRef.current = '';
     } catch {
-      setErrorMessage('Не удалось запросить повторный звонок');
+      setErrorMessage('Не удалось отправить запрос');
     } finally {
       setIsRequestInProgress(false);
     }
-  }, [setClientRateLimitExpiresAt, storedPhoneNumber, addPhone, setPhoneResendTimeout]);
+  }, [
+    isIPBlocked,
+    setIsIPBlocked,
+    storedPhoneNumber,
+    clearPhoneResendTimeout,
+    setClientRateLimitExpiresAt,
+    setPhonePinExpiresAt,
+    setPhoneResendTimeout,
+  ]);
 
   const handleVerify = useCallback(async () => {
-    if (!isPinInputCompleted || !storedPhoneNumber) return;
+    if (
+      !isPinInputCompleted ||
+      pinRef.current.length !== 5 ||
+      !storedPhoneNumber ||
+      isIPBlocked
+    )
+      return;
 
     setIsRequestInProgress(true);
     setErrorMessage(' ');
@@ -152,7 +199,13 @@ export default function VerifyCodeScreen() {
       if (!response.success) {
         if (response.blockExpiresAt) {
           setClientRateLimitExpiresAt(response.blockExpiresAt);
+        } else if (response.message === 'IP заблокирован') {
+          setIsIPBlocked(true);
+          clearPhoneResendTimeout(storedPhoneNumber);
         } else {
+          if (response.message === 'Код устарел') {
+            setPhonePinExpiresAt(storedPhoneNumber, null);
+          }
           setErrorMessage(response.message);
         }
         return;
@@ -167,19 +220,33 @@ export default function VerifyCodeScreen() {
       setStoredPhoneNumber(null);
       router.replace('/main');
     } catch {
-      setErrorMessage('Не удалось выполнить проверку кода');
+      setErrorMessage('Не удалось проверить код');
     } finally {
       setIsRequestInProgress(false);
     }
   }, [
+    isIPBlocked,
+    setIsIPBlocked,
     isPinInputCompleted,
     router,
-    setClientRateLimitExpiresAt,
     storedPhoneNumber,
+    clearPhoneResendTimeout,
+    setClientRateLimitExpiresAt,
     setStoredPhoneNumber,
+    setPhonePinExpiresAt,
   ]);
 
   const renderStatusContent = () => {
+    if (isIPBlocked) {
+      return (
+        <Pressable onPress={() => router.push('/auth/support-screen')}>
+          <ThemedText color="link" style={styles.centeredText}>
+            Не могу войти
+          </ThemedText>
+        </Pressable>
+      );
+    }
+
     if (hasErrorMessage) {
       return (
         <ThemedText color="notification" style={styles.centeredText}>
@@ -223,15 +290,19 @@ export default function VerifyCodeScreen() {
   return (
     <>
       <Pressable
-        disabled={isRateLimited}
+        disabled={isIPBlocked || isRateLimited}
         onPress={handleBack}
-        style={[styles.backButton, isRateLimited && styles.backButtonDisabled]}
+        style={[
+          styles.backButton,
+          (isIPBlocked || isRateLimited) && styles.backButtonDisabled,
+        ]}
       >
         <ThemedText color="link">{'< Назад'}</ThemedText>
       </Pressable>
       <Fieldset legend="Введите проверочный код">
         <PinInput
           key={pinInputKey}
+          onChange={handlePinChange}
           onComplete={handlePinInputComplete}
           submitAttempted={hasErrorMessage}
           disabled={isPinInputDisabled}
@@ -240,7 +311,11 @@ export default function VerifyCodeScreen() {
       {renderStatusContent()}
       <Button
         disabled={
-          !isPinInputCompleted || isRequestInProgress || isRateLimited || hasErrorMessage
+          isIPBlocked ||
+          !isPinInputCompleted ||
+          isRequestInProgress ||
+          isRateLimited ||
+          hasErrorMessage
         }
         loading={isRequestInProgress}
         onPress={handleVerify}

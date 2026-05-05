@@ -9,5 +9,5 @@ export default function IndexScreen() {
 
   if (user) return <Redirect href="/main" />;
 
-  return <Redirect href="/auth/register-screen" />;
+  return <Redirect href="/auth" />;
 }

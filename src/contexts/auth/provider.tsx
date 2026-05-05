@@ -13,24 +13,26 @@ import { type Phone, type StoredAuthFlowSnapshot } from './types';
 
 type AuthContextProps = {
   isSnapshotLoaded: boolean;
-  storedPhoneNumber: string | null;
-  setStoredPhoneNumber: (phone: string | null) => void;
+  isIPBlocked: boolean;
+  setIsIPBlocked: (blocked: boolean) => void;
   clientRateLimitExpiresAt: number | null;
   setClientRateLimitExpiresAt: (expiresAt: number | null) => void;
+  storedPhoneNumber: string | null;
+  setStoredPhoneNumber: (phone: string | null) => void;
   phones: Phone[];
   addPhone: (phone: string) => void;
-  setPhoneResendTimeout: (phone: string, expiresAt: number) => void;
+  setPhonePinExpiresAt: (phone: string, expiresAt: number | null) => void;
+  setPhoneResendTimeout: (phone: string, expiresAt: number | null) => void;
   clearPhoneResendTimeout: (phone: string) => void;
 };
 
 const AuthContext = createContext<AuthContextProps | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [isIPBlocked, setIsIPBlocked] = useState(false);
   const [isSnapshotLoaded, setIsSnapshotLoaded] = useState(false);
+  const [clientRateLimitExpiresAt, setClientRateLimitExpiresAt] = useState<number | null>(null);
   const [storedPhoneNumber, setStoredPhoneNumber] = useState<string | null>(null);
-  const [clientRateLimitExpiresAt, setClientRateLimitExpiresAt] = useState<
-    number | null
-  >(null);
   const [phones, setPhones] = useState<Phone[]>([]);
 
   // Загрузка snapshot при монтировании компонента
@@ -47,9 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
 
       if (snapshot) {
-        setPhones(snapshot.phones ?? []);
-        setStoredPhoneNumber(snapshot.storedPhoneNumber ?? null);
+        setIsIPBlocked(snapshot.isIPBlocked ?? false);
         setClientRateLimitExpiresAt(snapshot.clientRateLimitExpiresAt ?? null);
+        setStoredPhoneNumber(snapshot.storedPhoneNumber ?? null);
+        setPhones(snapshot.phones ?? []);
         setServerTimeOffset(snapshot.serverTimeOffset ?? 0);
       }
 
@@ -65,12 +68,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isSnapshotLoaded) return;
 
     void setAuthFlowSnapshot({
-      storedPhoneNumber, 
+      isIPBlocked,
       clientRateLimitExpiresAt,
+      storedPhoneNumber,
       phones,
       serverTimeOffset: getServerTimeOffset(),
     });
-  }, [isSnapshotLoaded, storedPhoneNumber, clientRateLimitExpiresAt, phones]);
+  }, [
+    isSnapshotLoaded,
+    isIPBlocked,
+    clientRateLimitExpiresAt,
+    storedPhoneNumber,
+    phones,
+  ]);
 
   // Если активен глобальный rate limit — очищаем все таймауты у номеров.
   // Иначе при перезагрузке приложения могут одновременно отображаться
@@ -78,32 +88,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isSnapshotLoaded) return;
     if (!clientRateLimitExpiresAt) return;
-  
-    setPhones(prev => prev.map(phone => ({ ...phone, resendTimeoutExpiresAt: null })));
+
+    setPhones((prev) =>
+      prev.map((phone) => ({ ...phone, resendTimeoutExpiresAt: null }))
+    );
   }, [isSnapshotLoaded, clientRateLimitExpiresAt]);
 
   const addPhone = (phone: string) => {
-    if (phone.trim() === '') return;
     setPhones((prev) => {
-      const existing = prev.find((item) => item.number === phone);
-      if (existing) return prev;
-      return [...prev, { number: phone, resendTimeoutExpiresAt: null }];
+      const isPhoneExist = prev.some((item) => item.number === phone);
+      if (isPhoneExist) return prev;
+      return [
+        ...prev,
+        { number: phone, resendTimeoutExpiresAt: null, pinExpiresAt: null },
+      ];
     });
   };
 
-  const setPhoneResendTimeout = (targetPhone: string, expiresAt: number) => {
-    if (targetPhone === '') return;
+  const setPhonePinExpiresAt = (targetPhone: string, expiresAt: number | null) => {
+    setPhones((prev) =>
+      prev.map((item) =>
+        item.number === targetPhone ? { ...item, pinExpiresAt: expiresAt } : item
+      )
+    );
+  };
+
+  const setPhoneResendTimeout = (targetPhone: string, expiresAt: number | null) => {
     setPhones((prev) => {
-      const hasEntry = prev.some((item) => item.number === targetPhone);
-      if (!hasEntry) {
-        return [
-          ...prev,
-          {
-            number: targetPhone,
-            resendTimeoutExpiresAt: expiresAt,
-          },
-        ];
-      }
       return prev.map((item) =>
         item.number === targetPhone
           ? { ...item, resendTimeoutExpiresAt: expiresAt }
@@ -123,16 +134,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       isSnapshotLoaded,
+      isIPBlocked,
+      setIsIPBlocked,
       storedPhoneNumber,
       setStoredPhoneNumber,
       clientRateLimitExpiresAt,
       setClientRateLimitExpiresAt,
       phones,
       addPhone,
+      setPhonePinExpiresAt,
       setPhoneResendTimeout,
       clearPhoneResendTimeout,
     }),
-    [isSnapshotLoaded, storedPhoneNumber, clientRateLimitExpiresAt, phones]
+    [isSnapshotLoaded, isIPBlocked, storedPhoneNumber, clientRateLimitExpiresAt, phones]
   );
 
   return <AuthContext value={value}>{children}</AuthContext>;

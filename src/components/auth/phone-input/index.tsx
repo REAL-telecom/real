@@ -3,8 +3,8 @@ import { DigitInput } from '@ui';
 import { sanitizePhone } from '@utils';
 
 type PhoneInputProps = {
-  onComplete?: (value: string) => void;
   onChange?: (value: string) => void;
+  onComplete?: (value: string) => void;
   submitAttempted?: boolean;
   initialValue?: string;
   disabled?: boolean;

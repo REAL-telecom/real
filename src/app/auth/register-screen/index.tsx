@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { requestAuthCode } from '@api/auth';
 import { PhoneInput } from '@components';
@@ -9,12 +9,15 @@ import { Button, CountdownText, Fieldset, ThemedText } from '@ui';
 
 export default function RegisterScreen() {
   const {
+    isIPBlocked,
+    setIsIPBlocked,
     storedPhoneNumber,
     setStoredPhoneNumber,
     clientRateLimitExpiresAt,
     setClientRateLimitExpiresAt,
     phones,
     addPhone,
+    setPhonePinExpiresAt,
     setPhoneResendTimeout,
     clearPhoneResendTimeout,
   } = useAuth();
@@ -26,7 +29,7 @@ export default function RegisterScreen() {
   const [errorMessage, setErrorMessage] = useState<string>(' ');
   const [isPhoneInputCompleted, setIsPhoneInputCompleted] = useState(false);
   const [isRequestInProgress, setIsRequestInProgress] = useState(false);
-  const [isPhoneEditing, setIsPhoneEditing] = useState(false);
+  const [isPhoneEdited, setIsPhoneEdited] = useState(false);
 
   const phoneNumberRef = useRef('');
 
@@ -41,7 +44,7 @@ export default function RegisterScreen() {
   }, [storedPhoneNumber]);
 
   // Данные о номере: если пользователь редактирует — используем введённый, иначе сохранённый
-  const currentPhoneNumber = isPhoneEditing
+  const currentPhoneNumber = isPhoneEdited
     ? enteredPhoneNumber
     : storedPhoneNumber || enteredPhoneNumber;
   const currentPhoneData = phones.find((item) => item.number === currentPhoneNumber);
@@ -88,11 +91,10 @@ export default function RegisterScreen() {
 
   const handlePhoneChange = useCallback((digits: string) => {
     const newNumber = digits.length === 10 ? `+7${digits}` : '';
-    const oldNumber = storedPhoneNumber ?? '';
     
     setEnteredPhoneNumber(newNumber);
     setIsPhoneInputCompleted(digits.length === 10);
-    setIsPhoneEditing(newNumber !== storedPhoneNumber);
+    setIsPhoneEdited(newNumber !== storedPhoneNumber);
   }, [storedPhoneNumber]);
 
   const handlePhoneInputComplete = useCallback((digits: string) => {
@@ -102,30 +104,38 @@ export default function RegisterScreen() {
   }, []);
 
   const handleRegister = useCallback(async () => {
-    if (!isPhoneInputCompleted) return;
-    const fullPhone = enteredPhoneNumber;
+    if (!isPhoneInputCompleted || isIPBlocked) return;
 
     setIsRequestInProgress(true);
     setErrorMessage(' ');
 
     try {
-      const response = await requestAuthCode(fullPhone);
+      const response = await requestAuthCode(enteredPhoneNumber);
       if (!response.success) {
         if (response.blockExpiresAt) {
           setErrorMessage(' ');
           setClientRateLimitExpiresAt(response.blockExpiresAt);
+        } else if (response.message === 'IP заблокирован') {
+          setIsIPBlocked(true);
+          if (currentPhoneNumber !== '') {
+            clearPhoneResendTimeout(currentPhoneNumber);
+          }
         } else {
           setErrorMessage(response.message);
         }
         return;
       }
 
-      addPhone(fullPhone);
-      setStoredPhoneNumber(fullPhone);
-      setIsPhoneEditing(false);
+      addPhone(enteredPhoneNumber);
+      setStoredPhoneNumber(enteredPhoneNumber);
+      setIsPhoneEdited(false);
+
+      if (response.pinExpiresAt) {
+        setPhonePinExpiresAt(enteredPhoneNumber, response.pinExpiresAt);
+      }
 
       if (response.nextRequestAvailableAt) {
-        setPhoneResendTimeout(fullPhone, response.nextRequestAvailableAt);
+        setPhoneResendTimeout(enteredPhoneNumber, response.nextRequestAvailableAt);
       }
 
       router.replace('/auth/verify-screen');
@@ -135,16 +145,31 @@ export default function RegisterScreen() {
       setIsRequestInProgress(false);
     }
   }, [
+    isIPBlocked,
+    setIsIPBlocked,
     isPhoneInputCompleted,
+    currentPhoneNumber,
     enteredPhoneNumber,
     router,
     addPhone,
-    setStoredPhoneNumber,
     setClientRateLimitExpiresAt,
+    setPhonePinExpiresAt,
     setPhoneResendTimeout,
+    setStoredPhoneNumber,
+    clearPhoneResendTimeout,
   ]);
 
   const renderStatusContent = () => {
+    if (isIPBlocked) {
+      return (
+        <Pressable onPress={() => router.push('/auth/support-screen')}>
+          <ThemedText color="link" style={styles.centeredText}>
+            Не могу войти
+          </ThemedText>
+        </Pressable>
+      );
+    }
+
     if (hasErrorMessage) {
       return (
         <ThemedText color="notification" style={styles.centeredText}>
@@ -175,12 +200,13 @@ export default function RegisterScreen() {
           onComplete={handlePhoneInputComplete}
           onChange={handlePhoneChange}
           initialValue={initialPhoneDigits}
-          disabled={isRateLimited || hasErrorMessage}
+          disabled={isIPBlocked || isRateLimited || hasErrorMessage}
         />
       </Fieldset>
       {renderStatusContent()}
       <Button
         disabled={
+          isIPBlocked ||
           !isPhoneInputCompleted ||
           isRequestInProgress ||
           isRateLimited ||
